@@ -4,6 +4,13 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Fixed: CSV export put every crew member on one line
+
+**Fixed**
+- `exportCrewCSV()` was joining rows with the literal two-character string `\n` instead of an actual line-break character, so opening the exported CSV in Excel/Sheets showed every crew row crammed onto a single line. Rows are now joined with a real `\r\n` line break, which is also the safest line ending for Windows Excel compatibility.
+
+---
+
 ## 2026-07-12 — Fixed: Tab 4 beltpack types weren't actually scoped to Tab 1
 
 **Fixed**
