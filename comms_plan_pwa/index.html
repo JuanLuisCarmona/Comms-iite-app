@@ -679,6 +679,16 @@ let crew4 = []; // {id, position, name, role, type, headset, verified, plIds:Set
 const TYPE_OPTIONS = ['DBP (wired beltpack)','Bolero beltpack','Panel / Keypanel','Green-GO BPX/WBPX','Clear-Com HelixNet beltpack','Clear-Com FreeSpeak beltpack','Performer beltpack','Analog beltpack','Other'];
 const HEADSET_OPTIONS = ['Single-Muff (4-pin XLR)','Double-Muff (4-pin XLR)','Single-Muff (5-pin XLR/PTT)','Double-Muff (5-pin XLR/PTT)','Lightweight Headset','Noise-Cancelling Headset','Handset','Speaker Station (no headset)','Integrated Mic/Speaker (no headset)'];
 
+// Physical channel/key ceilings per device type — caps how many PLs can be ticked for that row.
+// Types not listed here (Panel/Keypanel, FreeSpeak, Analog, Other) vary too much by model to cap generically.
+const TYPE_MAX_PL = {
+  'DBP (wired beltpack)': 4,             // RTS DBP: channels A/B/C/D
+  'Bolero beltpack': 6,                  // Riedel Bolero: 6 configurable keys + Reply
+  'Clear-Com HelixNet beltpack': 2,      // e.g. HBP-2X: 2-channel full-duplex
+  'Green-GO BPX/WBPX': 32,               // Green-GO Beltpack X: 32 channels
+  'Performer beltpack': 2                // Riedel Performer C3: 2-channel
+};
+
 const exportCols = {position:true, name:true, role:true, type:true, headset:true, verified:true, pl:true};
 
 function autoGeneratePLs(){
@@ -730,11 +740,28 @@ function addCrew(){
 }
 function removeCrew(id){ crew4 = crew4.filter(c=>c.id!==id); renderCrewTable4(); }
 function updateCrewField4(id, field, val){ const c = crew4.find(c=>c.id===id); if(c) c[field]=val; }
-function updateCrewSelect4(id, field, val){ const c = crew4.find(c=>c.id===id); if(c) c[field]=val; }
+function updateCrewSelect4(id, field, val){
+  const c = crew4.find(c=>c.id===id); if(!c) return;
+  c[field]=val;
+  if(field==='type'){
+    const max = TYPE_MAX_PL[val];
+    if(max && c.plIds.size>max){
+      c.plIds = new Set([...c.plIds].slice(0, max)); // trim overflow when switching to a more limited device
+    }
+  }
+  renderCrewTable4();
+}
 function toggleCrewVerified(id, checked){ const c = crew4.find(c=>c.id===id); if(c) c.verified=checked; }
 function togglePL4(crewId, plId, checked){
   const c = crew4.find(c=>c.id===crewId); if(!c) return;
-  if(checked) c.plIds.add(plId); else c.plIds.delete(plId);
+  const max = TYPE_MAX_PL[c.type];
+  if(checked){
+    if(max && c.plIds.size>=max){ renderCrewTable4(); return; } // at capacity — reject and re-render to reset the checkbox
+    c.plIds.add(plId);
+  } else {
+    c.plIds.delete(plId);
+  }
+  renderCrewTable4();
 }
 function markAllVerified(state){ crew4.forEach(c=>c.verified=state); renderCrewTable4(); }
 
@@ -756,13 +783,19 @@ function renderCrewTable4(){
       <td><select onchange="updateCrewSelect4(${c.id},'headset',this.value)">${HEADSET_OPTIONS.map(h=>`<option ${c.headset===h?'selected':''}>${h}</option>`).join('')}</select></td>
       <td>
         <div class="pl-check-list">
-          ${plDirectory4.length ? plDirectory4.map(p=>`
-            <label class="pl-check-item">
-              <input type="checkbox" ${c.plIds.has(p.id)?'checked':''} onchange="togglePL4(${c.id}, ${p.id}, this.checked)">
+          ${plDirectory4.length ? plDirectory4.map(p=>{
+            const max = TYPE_MAX_PL[c.type];
+            const isChecked = c.plIds.has(p.id);
+            const atCap = max && !isChecked && c.plIds.size>=max;
+            return `
+            <label class="pl-check-item" ${atCap?'style="opacity:.45;"':''}>
+              <input type="checkbox" ${isChecked?'checked':''} ${atCap?'disabled':''} onchange="togglePL4(${c.id}, ${p.id}, this.checked)">
               ${escapeHtml(p.name)}
             </label>
-          `).join('') : '<span class="empty-hint">No PLs defined.</span>'}
+          `;
+          }).join('') : '<span class="empty-hint">No PLs defined.</span>'}
         </div>
+        ${TYPE_MAX_PL[c.type] ? `<div style="font-size:10.5px;color:var(--muted);margin-top:4px;">${c.plIds.size} / ${TYPE_MAX_PL[c.type]} channels used (${escapeHtml(c.type)} limit)</div>` : ''}
       </td>
       <td style="text-align:center;"><input type="checkbox" ${c.verified?'checked':''} onchange="toggleCrewVerified(${c.id}, this.checked)"></td>
       <td class="row-actions"><button class="btn danger" onclick="removeCrew(${c.id})">Remove</button></td>
