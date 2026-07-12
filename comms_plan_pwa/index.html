@@ -257,8 +257,9 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.12';
+const APP_VERSION = '2026-07-12.13';
 const APP_UPDATE_SUMMARY = [
+  'Fixed: the CSV export was joining rows with a literal backslash-n instead of a real line break, so every crew member landed on one single line when opened in Excel/Sheets. Rows now break onto proper separate lines',
   'Fixed: Tab 4 "type of point" was still showing beltpack types (Green-GO, Clear-Com HelixNet/FreeSpeak, RTS DBP, Performer) regardless of what you picked on Tab 1. Every type is now tied to its actual system — e.g. choosing only Riedel on Tab 1 means only Bolero/Performer beltpacks show up, no Green-GO or Clear-Com options',
   'Tab 4 "type of point" dropdown is now scoped to only the panel models you actually added on Tab 1 for your chosen systems (e.g. picking Clear-Com Arcadia + V-Series IrisX on Tab 1 means only IrisX shows up on Tab 4 — not every other brand\'s panels too), each still capped to its real key count',
   'Tab 4 "type of point" dropdown now also lists every specific panel/keypanel model from Tab 1 (KP-32, RSP-2318, V-Series IrisX, MCXD, etc.), each with its real key-count PL cap — so crew assigned to a specific panel are capped correctly instead of only the generic "Panel / Keypanel" option',
@@ -1142,7 +1143,7 @@ function exportCrewCSV(){
     if(exportCols.pl) plDirectory4.forEach(p=>row.push(c.plIds.has(p.id) ? 'TRUE' : 'FALSE'));
     rows.push(row);
   });
-  const csv = rows.map(r=>r.map(csvEscape).join(',')).join('\\n');
+  const csv = rows.map(r=>r.map(csvEscape).join(',')).join('\r\n');
   downloadBlob(csv, 'text/csv', (document.getElementById('org_company').value || 'comms_plan') + '_roles.csv');
 }
 
