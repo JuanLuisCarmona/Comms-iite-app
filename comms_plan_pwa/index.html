@@ -257,8 +257,9 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.8';
+const APP_VERSION = '2026-07-12.9';
 const APP_UPDATE_SUMMARY = [
+  'Tab 1 now lets you pick the actual compatible keypanel/desk panel models for RTS (OMS/ODIN/ADAM), Riedel (Artist/Tango/Performer-C44), Clear-Com (Arcadia/Eclipse HX/HelixNet/Encore) and Green-GO (MCX/MCXD), with quantities, instead of a single generic "panels" number',
   'FreeSpeak beltpack is now split into FreeSpeak II (5-channel cap) and FreeSpeak Edge (9-channel cap) so its party line limit is enforced like every other device type',
   'Added 5 new comms brands: Hollyland, Pliant Technologies, Eartec, Telikou, Vokkero',
   'Added more Clear-Com (Encore, Agent-IC/LQ) and Riedel (Tango, PunQtum, Acrobat) models; Green-GO split into MCX/MCXD/BPX/WBPX',
@@ -379,6 +380,80 @@ const MODEL_SPECS = {
   'Custom / Other': {notes:'Generic/other system — record known limits in your own notes; nothing to validate automatically.'}
 };
 
+// Compatible desk/rack keypanel models per system — lets you pick the exact
+// panel hardware instead of just a generic "panels" count. maxKeys is the
+// physical key/channel ceiling per unit (used to size how many you'd need).
+// Systems not listed here (wireless-only, software-only, or too variable to
+// catalogue — Bolero, Acrobat, PunQtum, FreeSpeak, Agent-IC/LQ, all RF-only
+// brands, Custom/Other) keep the plain manual "panels" number field instead.
+const PANEL_OPTIONS = {
+  'OMS (Digital Partyline)': [
+    {name:'KP-32 Classic Keypanel', maxKeys:30},
+    {name:'KP-12 Modular Keypanel', maxKeys:12},
+    {name:'KP-5032 Keypanel', maxKeys:30},
+    {name:'KP-4016 Keypanel', maxKeys:16},
+    {name:'KP-632 / EKP-632 Keypanel', maxKeys:6}
+  ],
+  'ODIN (Matrix)': [
+    {name:'KP-32 Classic Keypanel', maxKeys:30},
+    {name:'KP-12 Modular Keypanel', maxKeys:12},
+    {name:'KP-5032 Keypanel', maxKeys:30},
+    {name:'KP-4016 Keypanel', maxKeys:16},
+    {name:'KP-632 / EKP-632 Keypanel', maxKeys:6}
+  ],
+  'ADAM / ADAM-M / Cronus (Matrix)': [
+    {name:'KP-32 Classic Keypanel', maxKeys:30},
+    {name:'KP-12 Modular Keypanel', maxKeys:12},
+    {name:'KP-5032 Keypanel', maxKeys:30},
+    {name:'KP-4016 Keypanel', maxKeys:16},
+    {name:'KP-632 / EKP-632 Keypanel', maxKeys:6}
+  ],
+  'Artist (Matrix)': [
+    {name:'RSP-2318 SmartPanel — Basic app (12 keys)', maxKeys:12},
+    {name:'RSP-2318 SmartPanel — Plus app (12 keys)', maxKeys:12},
+    {name:'RSP-2318 SmartPanel — Pro app (18 keys)', maxKeys:18},
+    {name:'DCP-1116 Control Panel', maxKeys:16}
+  ],
+  'Tango (Compact Matrix)': [
+    {name:'RSP-2318 SmartPanel — Basic app (12 keys)', maxKeys:12},
+    {name:'RSP-2318 SmartPanel — Plus app (12 keys)', maxKeys:12},
+    {name:'RSP-2318 SmartPanel — Pro app (18 keys)', maxKeys:18},
+    {name:'DCP-1116 Control Panel', maxKeys:16}
+  ],
+  'Performer / C44 (Partyline)': [
+    {name:'CD-2 2-Channel Desk Station', maxKeys:2},
+    {name:'CW-2 2-Channel Wall Station', maxKeys:2},
+    {name:'CR-2 Rack Station', maxKeys:2},
+    {name:'CR-4 Rack Station', maxKeys:4}
+  ],
+  'Arcadia (Central Station)': [
+    {name:'V-Series Iris Keypanel', maxKeys:32},
+    {name:'V-Series IrisX Keypanel', maxKeys:32},
+    {name:'HelixNet HMS-4X Main Station (via I.V. port)', maxKeys:4}
+  ],
+  'Eclipse HX (Matrix)': [
+    {name:'V-Series Keypanel (12-key)', maxKeys:12},
+    {name:'V-Series Keypanel (16-key)', maxKeys:16},
+    {name:'V-Series Keypanel (24-key)', maxKeys:24},
+    {name:'V-Series IrisX Keypanel (32-key)', maxKeys:32}
+  ],
+  'HelixNet (Digital Partyline)': [
+    {name:'HMS-4X Main Station', maxKeys:4}
+  ],
+  'Encore (Analog Partyline)': [
+    {name:'2-Channel Desk/Wall Station', maxKeys:2}
+  ],
+  'MCX (Rack Station)': [
+    {name:'MCX Rack Station', maxKeys:32},
+    {name:'MCXEXT Rack Extension', maxKeys:32}
+  ],
+  'MCXD (Desktop Station)': [
+    {name:'MCXD Desktop Station', maxKeys:32},
+    {name:'MCXDEXT Desk Extension', maxKeys:32},
+    {name:'WPX Wall Panel X', maxKeys:32}
+  ]
+};
+
 // ===================================================================
 // TAB 1 — ORG INFO + SYSTEMS
 // ===================================================================
@@ -394,12 +469,16 @@ function handleLogoUpload(evt){
 function renderPrintPreviewLater(){/* placeholder for future live preview hooks */}
 
 let sysSeq = 0;
-let systemBlocks = []; // {id, brand, model, label, plNeeded, confNeeded, ifbNeeded, beltpacks, panels}
+let panelLineSeq = 0;
+let systemBlocks = []; // {id, brand, model, label, plNeeded, confNeeded, ifbNeeded, beltpacks, panels, panelLines:[{id,panelName,qty}]}
 
 function seedSystems(){
   systemBlocks = [
-    {id:++sysSeq, brand:'Riedel', model:'Bolero (Wireless)', label:'Main Bolero Net', plNeeded:10, confNeeded:0, ifbNeeded:0, beltpacks:20, panels:0},
-    {id:++sysSeq, brand:'RTS', model:'OMS (Digital Partyline)', label:'OMS Base', plNeeded:16, confNeeded:0, ifbNeeded:2, beltpacks:10, panels:6}
+    {id:++sysSeq, brand:'Riedel', model:'Bolero (Wireless)', label:'Main Bolero Net', plNeeded:10, confNeeded:0, ifbNeeded:0, beltpacks:20, panels:0, panelLines:[]},
+    {id:++sysSeq, brand:'RTS', model:'OMS (Digital Partyline)', label:'OMS Base', plNeeded:16, confNeeded:0, ifbNeeded:2, beltpacks:10, panels:6, panelLines:[
+      {id:++panelLineSeq, panelName:'KP-32 Classic Keypanel', qty:4},
+      {id:++panelLineSeq, panelName:'KP-12 Modular Keypanel', qty:2}
+    ]}
   ];
 }
 seedSystems();
@@ -408,7 +487,7 @@ function modelsForBrand(brand){ return BRANDS[brand] || []; }
 
 function addSystem(){
   const brand = 'RTS';
-  systemBlocks.push({id:++sysSeq, brand, model:modelsForBrand(brand)[0], label:'New System', plNeeded:0, confNeeded:0, ifbNeeded:0, beltpacks:0, panels:0});
+  systemBlocks.push({id:++sysSeq, brand, model:modelsForBrand(brand)[0], label:'New System', plNeeded:0, confNeeded:0, ifbNeeded:0, beltpacks:0, panels:0, panelLines:[]});
   renderSystems();
 }
 function removeSystem(id){
@@ -418,13 +497,44 @@ function removeSystem(id){
 function updateSystemBrand(id, brand){
   const s = systemBlocks.find(s=>s.id===id); if(!s) return;
   s.brand = brand; s.model = modelsForBrand(brand)[0];
+  s.panelLines = []; s.panels = 0;
   renderSystems();
 }
 function updateSystemField(id, field, val){
   const s = systemBlocks.find(s=>s.id===id); if(!s) return;
   if(['plNeeded','confNeeded','ifbNeeded','beltpacks','panels'].includes(field)) val = parseInt(val)||0;
   s[field]=val;
+  if(field==='model'){ s.panelLines = []; s.panels = 0; }
   renderSystemFlags(id);
+}
+
+// ---- Per-system panel line items (specific compatible keypanel models) ----
+function syncPanelsTotal(s){
+  if(PANEL_OPTIONS[s.model]){
+    s.panels = s.panelLines.reduce((sum,l)=>sum+(parseInt(l.qty)||0), 0);
+  }
+}
+function addPanelLine(sysId){
+  const s = systemBlocks.find(s=>s.id===sysId); if(!s) return;
+  const opts = PANEL_OPTIONS[s.model]; if(!opts || !opts.length) return;
+  s.panelLines.push({id:++panelLineSeq, panelName:opts[0].name, qty:1});
+  syncPanelsTotal(s);
+  renderSystems();
+}
+function removePanelLine(sysId, lineId){
+  const s = systemBlocks.find(s=>s.id===sysId); if(!s) return;
+  s.panelLines = s.panelLines.filter(l=>l.id!==lineId);
+  syncPanelsTotal(s);
+  renderSystems();
+}
+function updatePanelLine(sysId, lineId, field, val){
+  const s = systemBlocks.find(s=>s.id===sysId); if(!s) return;
+  const line = s.panelLines.find(l=>l.id===lineId); if(!line) return;
+  line[field] = field==='qty' ? (parseInt(val)||0) : val;
+  syncPanelsTotal(s);
+  renderSystemFlags(sysId);
+  const totalEl = document.getElementById('panelsTotal_'+sysId);
+  if(totalEl) totalEl.textContent = s.panels;
 }
 
 function flagsForSystem(s){
@@ -459,6 +569,33 @@ function renderSystemFlags(id){
     || `<div class="empty-hint">No published numeric ceiling for this field on this model — logged as informational only.</div>`;
 }
 
+function renderPanelPicker(s){
+  const opts = PANEL_OPTIONS[s.model];
+  if(!opts || !opts.length){
+    // No known panel catalogue for this model — fall back to a plain manual count.
+    return `<div class="miniField"><label>Panels/keypanels needed</label><input type="number" min="0" value="${s.panels}" oninput="updateSystemField(${s.id},'panels',this.value)"></div>`;
+  }
+  const panelSelectOptions = opts.map(o=>`<option value="${escapeHtml(o.name)}">${escapeHtml(o.name)} — ${o.maxKeys} keys</option>`).join('');
+  const lines = s.panelLines.map(l=>{
+    const optHtml = opts.map(o=>`<option value="${escapeHtml(o.name)}" ${l.panelName===o.name?'selected':''}>${escapeHtml(o.name)} — ${o.maxKeys} keys</option>`).join('');
+    return `
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <select style="flex:1;" onchange="updatePanelLine(${s.id},${l.id},'panelName',this.value)">${optHtml}</select>
+        <input type="number" min="0" style="width:70px;" value="${l.qty}" oninput="updatePanelLine(${s.id},${l.id},'qty',this.value)">
+        <button class="btn danger" style="padding:6px 10px;" onclick="removePanelLine(${s.id},${l.id})">✕</button>
+      </div>`;
+  }).join('');
+  return `
+    <div class="miniField" style="flex:1 1 100%;">
+      <label>Compatible panels/keypanels for this system</label>
+      ${lines || `<div class="empty-hint" style="margin:4px 0;">No panels added yet.</div>`}
+      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+        <button class="btn" onclick="addPanelLine(${s.id})">+ Add panel</button>
+        <span style="font-size:12px;color:var(--muted);">Total: <b id="panelsTotal_${s.id}">${s.panels}</b></span>
+      </div>
+    </div>`;
+}
+
 function renderSystemCard(s){
   const brandOptions = Object.keys(BRANDS).map(b=>`<option value="${b}" ${s.brand===b?'selected':''}>${b}</option>`).join('');
   const modelOptions = modelsForBrand(s.brand).map(m=>`<option value="${m}" ${s.model===m?'selected':''}>${m}</option>`).join('');
@@ -476,7 +613,7 @@ function renderSystemCard(s){
       <div class="miniField"><label>Conferences needed</label><input type="number" min="0" value="${s.confNeeded}" oninput="updateSystemField(${s.id},'confNeeded',this.value)"></div>
       <div class="miniField"><label>IFBs needed</label><input type="number" min="0" value="${s.ifbNeeded}" oninput="updateSystemField(${s.id},'ifbNeeded',this.value)"></div>
       <div class="miniField"><label>Beltpacks needed</label><input type="number" min="0" value="${s.beltpacks}" oninput="updateSystemField(${s.id},'beltpacks',this.value)"></div>
-      <div class="miniField"><label>Panels/keypanels needed</label><input type="number" min="0" value="${s.panels}" oninput="updateSystemField(${s.id},'panels',this.value)"></div>
+      ${renderPanelPicker(s)}
     </div>
     <div style="margin-top:10px;font-size:12px;color:var(--muted);">${spec.notes||''}</div>
     <div id="sysflags_${s.id}" style="margin-top:8px;">${flagsForSystem(s).map(f=>`<div class="flag ${f[0]}"><div class="dot"></div><div>${f[1]}</div></div>`).join('')}</div>
@@ -508,16 +645,22 @@ seedSchematic();
 function renderSchemSystems(){
   const wrap = document.getElementById('schemSystemsWrap');
   if(!wrap) return;
-  wrap.innerHTML = systemBlocks.length ? systemBlocks.map(s=>`
+  wrap.innerHTML = systemBlocks.length ? systemBlocks.map(s=>{
+    const hasCatalogue = !!(PANEL_OPTIONS[s.model] && PANEL_OPTIONS[s.model].length);
+    const panelsField = hasCatalogue
+      ? `<div class="miniField"><label>Panels (set in Tab 1)</label><input type="number" value="${s.panels}" disabled style="opacity:.7;"></div>`
+      : `<div class="miniField"><label>Panels</label><input type="number" min="0" value="${s.panels}" oninput="updateSystemField(${s.id},'panels',this.value); renderSchemSystemsQuiet();"></div>`;
+    return `
     <div class="sysCard">
       <div class="topline">
         <div><b>${escapeHtml(s.label)}</b><div style="color:var(--muted);font-size:12px;">${escapeHtml(s.brand)} — ${escapeHtml(s.model)}</div></div>
         <div class="miniField"><label>Beltpacks</label><input type="number" min="0" value="${s.beltpacks}" oninput="updateSystemField(${s.id},'beltpacks',this.value); renderSchemSystemsQuiet();"></div>
-        <div class="miniField"><label>Panels</label><input type="number" min="0" value="${s.panels}" oninput="updateSystemField(${s.id},'panels',this.value); renderSchemSystemsQuiet();"></div>
+        ${panelsField}
         <div></div>
       </div>
     </div>
-  `).join('') : `<div class="empty-hint">No systems defined yet — add them in Tab 1.</div>`;
+  `;
+  }).join('') : `<div class="empty-hint">No systems defined yet — add them in Tab 1.</div>`;
 }
 function renderSchemSystemsQuiet(){ /* counts already updated in model; SVG re-renders on tab switch or connection change */ }
 
