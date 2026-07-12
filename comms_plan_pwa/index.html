@@ -257,19 +257,11 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.13';
+const APP_VERSION = '2026-07-12.14';
+// Only the most recent change goes here — the banner shows just this entry,
+// not the full project history (see CHANGELOG.md in the repo for that).
 const APP_UPDATE_SUMMARY = [
-  'Fixed: the CSV export was joining rows with a literal backslash-n instead of a real line break, so every crew member landed on one single line when opened in Excel/Sheets. Rows now break onto proper separate lines',
-  'Fixed: Tab 4 "type of point" was still showing beltpack types (Green-GO, Clear-Com HelixNet/FreeSpeak, RTS DBP, Performer) regardless of what you picked on Tab 1. Every type is now tied to its actual system — e.g. choosing only Riedel on Tab 1 means only Bolero/Performer beltpacks show up, no Green-GO or Clear-Com options',
-  'Tab 4 "type of point" dropdown is now scoped to only the panel models you actually added on Tab 1 for your chosen systems (e.g. picking Clear-Com Arcadia + V-Series IrisX on Tab 1 means only IrisX shows up on Tab 4 — not every other brand\'s panels too), each still capped to its real key count',
-  'Tab 4 "type of point" dropdown now also lists every specific panel/keypanel model from Tab 1 (KP-32, RSP-2318, V-Series IrisX, MCXD, etc.), each with its real key-count PL cap — so crew assigned to a specific panel are capped correctly instead of only the generic "Panel / Keypanel" option',
-  'Tab 1 now lets you pick the actual compatible keypanel/desk panel models for RTS (OMS/ODIN/ADAM), Riedel (Artist/Tango/Performer-C44), Clear-Com (Arcadia/Eclipse HX/HelixNet/Encore) and Green-GO (MCX/MCXD), with quantities, instead of a single generic "panels" number',
-  'FreeSpeak beltpack is now split into FreeSpeak II (5-channel cap) and FreeSpeak Edge (9-channel cap) so its party line limit is enforced like every other device type',
-  'Added 5 new comms brands: Hollyland, Pliant Technologies, Eartec, Telikou, Vokkero',
-  'Added more Clear-Com (Encore, Agent-IC/LQ) and Riedel (Tango, PunQtum, Acrobat) models; Green-GO split into MCX/MCXD/BPX/WBPX',
-  'Client report now shows one tick/cross column per party line instead of a text list',
-  'Fixed a bug where app updates weren\'t reaching devices that already had it installed',
-  'Party line selections on the Roles tab now respect each device\'s real channel limit (e.g. DBP = 4)'
+  'The "what\'s new" banner now shows only the latest update instead of the full history, so it doesn\'t fill up the screen'
 ];
 
 function checkForUpdateBanner(){
