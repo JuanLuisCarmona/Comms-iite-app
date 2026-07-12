@@ -4,6 +4,15 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — FreeSpeak beltpack channel cap fix
+
+**Fixed**
+- "Clear-Com FreeSpeak beltpack" had no party line cap on Tab 4, unlike every other device type. Split it into the two real product generations, each with its correct channel limit:
+  - Clear-Com FreeSpeak II beltpack: 5 channels (FSII-BP19)
+  - Clear-Com FreeSpeak Edge beltpack: 9 channels (FSE-BP50)
+
+---
+
 ## 2026-07-12 — Brand/model registry expansion
 
 **Added**
