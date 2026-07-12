@@ -4,6 +4,22 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Fixed: Tab 4 beltpack types weren't actually scoped to Tab 1
+
+**Fixed**
+- The previous fix only scoped the specific *panel* models (KP-32, IrisX, etc.) to what was added on Tab 1 — the base beltpack types (Green-GO BPX/WBPX, Clear-Com HelixNet beltpack, Clear-Com FreeSpeak II/Edge beltpack, RTS DBP, Performer beltpack) were still always shown regardless of brand chosen. Reported: selecting only Riedel on Tab 1 still showed "Green-GO Beltpack" as an option on Tab 4.
+- Every base type is now tied to its real system model(s) and only appears once that system is chosen on Tab 1:
+  - DBP → RTS OMS/ODIN/ADAM
+  - Bolero beltpack → Riedel Bolero
+  - Performer beltpack → Riedel Performer/C44
+  - Green-GO BPX/WBPX → any Green-GO model (BPX, WBPX, MCX, MCXD)
+  - Clear-Com HelixNet beltpack → HelixNet or Arcadia
+  - Clear-Com FreeSpeak II/Edge beltpack → FreeSpeak or Arcadia
+- Generic "Panel / Keypanel (unlisted)", Analog beltpack, and Other remain universal fallbacks.
+- New crew rows now default to a type that's actually valid for what's chosen, instead of always defaulting to DBP.
+
+---
+
 ## 2026-07-12 — Tab 4 panel types now scoped to what you chose on Tab 1
 
 **Changed**
