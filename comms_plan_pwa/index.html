@@ -257,8 +257,9 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.11';
+const APP_VERSION = '2026-07-12.12';
 const APP_UPDATE_SUMMARY = [
+  'Fixed: Tab 4 "type of point" was still showing beltpack types (Green-GO, Clear-Com HelixNet/FreeSpeak, RTS DBP, Performer) regardless of what you picked on Tab 1. Every type is now tied to its actual system — e.g. choosing only Riedel on Tab 1 means only Bolero/Performer beltpacks show up, no Green-GO or Clear-Com options',
   'Tab 4 "type of point" dropdown is now scoped to only the panel models you actually added on Tab 1 for your chosen systems (e.g. picking Clear-Com Arcadia + V-Series IrisX on Tab 1 means only IrisX shows up on Tab 4 — not every other brand\'s panels too), each still capped to its real key count',
   'Tab 4 "type of point" dropdown now also lists every specific panel/keypanel model from Tab 1 (KP-32, RSP-2318, V-Series IrisX, MCXD, etc.), each with its real key-count PL cap — so crew assigned to a specific panel are capped correctly instead of only the generic "Panel / Keypanel" option',
   'Tab 1 now lets you pick the actual compatible keypanel/desk panel models for RTS (OMS/ODIN/ADAM), Riedel (Artist/Tango/Performer-C44), Clear-Com (Arcadia/Eclipse HX/HelixNet/Encore) and Green-GO (MCX/MCXD), with quantities, instead of a single generic "panels" number',
@@ -931,28 +932,45 @@ function usedPanelTypes(){
   return [...seen.entries()]; // [[name, maxKeys], ...]
 }
 
+// Each base (non-panel) device type is tied to the specific system model(s)
+// it belongs to, so it's only offered on Tab 4 once that model has been
+// chosen on Tab 1 — same rule as the panel catalogue. requiredModels:null
+// means it's a universal fallback (generic Panel/Keypanel, Analog, Other)
+// that always shows regardless of what's chosen.
 const TYPE_OPTIONS_BASE = [
-  'DBP (wired beltpack)',
-  'Bolero beltpack',
-  'Panel / Keypanel (generic / unlisted)',
-  'Green-GO BPX/WBPX',
-  'Clear-Com HelixNet beltpack',
-  'Clear-Com FreeSpeak II beltpack',
-  'Clear-Com FreeSpeak Edge beltpack',
-  'Performer beltpack',
-  'Analog beltpack',
-  'Other'
+  {name:'DBP (wired beltpack)', requiredModels:['OMS (Digital Partyline)','ODIN (Matrix)','ADAM / ADAM-M / Cronus (Matrix)']},
+  {name:'Bolero beltpack', requiredModels:['Bolero (Wireless)']},
+  {name:'Panel / Keypanel (generic / unlisted)', requiredModels:null},
+  {name:'Green-GO BPX/WBPX', requiredModels:['BPX (Wired Beltpack)','WBPX (Wireless Beltpack)','MCX (Rack Station)','MCXD (Desktop Station)']},
+  {name:'Clear-Com HelixNet beltpack', requiredModels:['HelixNet (Digital Partyline)','Arcadia (Central Station)']},
+  {name:'Clear-Com FreeSpeak II beltpack', requiredModels:['FreeSpeak (Wireless)','Arcadia (Central Station)']},
+  {name:'Clear-Com FreeSpeak Edge beltpack', requiredModels:['FreeSpeak (Wireless)','Arcadia (Central Station)']},
+  {name:'Performer beltpack', requiredModels:['Performer / C44 (Partyline)']},
+  {name:'Analog beltpack', requiredModels:null},
+  {name:'Other', requiredModels:null}
 ];
 const HEADSET_OPTIONS = ['Single-Muff (4-pin XLR)','Double-Muff (4-pin XLR)','Single-Muff (5-pin XLR/PTT)','Double-Muff (5-pin XLR/PTT)','Lightweight Headset','Noise-Cancelling Headset','Handset','Speaker Station (no headset)','Integrated Mic/Speaker (no headset)'];
 
-// Builds today's "type of point" list: base beltpack/generic types + only the
-// panel models actually chosen on Tab 1. If a crew member's current type was
-// removed from Tab 1 since it was assigned, it's kept in its own row's list
-// so the assignment isn't silently lost or reset.
+// Builds today's "type of point" list: only the base beltpack types whose
+// system model was actually chosen on Tab 1, plus only the panel models
+// actually added there. Nothing brand-specific shows up unless its system
+// is present on Tab 1. If a crew member's current type is no longer
+// compatible (its system/panel was removed), it's kept in that row's own
+// list so the assignment isn't silently lost or reset.
 function computeTypeOptions(currentValue){
+  const models = new Set(systemBlocks.map(s=>s.model));
   const used = usedPanelTypes().map(([name])=>name);
-  const list = [...TYPE_OPTIONS_BASE.slice(0,3), ...used, ...TYPE_OPTIONS_BASE.slice(3)];
-  if(currentValue && !list.includes(currentValue)) list.splice(3, 0, currentValue);
+  const list = [];
+  TYPE_OPTIONS_BASE.forEach(t=>{
+    const allowed = !t.requiredModels || t.requiredModels.some(m=>models.has(m));
+    if(!allowed) return;
+    list.push(t.name);
+    if(t.name==='Panel / Keypanel (generic / unlisted)') list.push(...used);
+  });
+  if(currentValue && !list.includes(currentValue)){
+    const idx = list.indexOf('Panel / Keypanel (generic / unlisted)');
+    list.splice(idx>=0 ? idx+1 : 0, 0, currentValue);
+  }
   return list;
 }
 
@@ -1018,7 +1036,8 @@ function seedCrew(){
 seedCrew();
 
 function addCrew(){
-  crew4.push({id:++crewSeq4, position:'', name:'', role:'', type:TYPE_OPTIONS_BASE[0], headset:HEADSET_OPTIONS[0], verified:false, plIds:new Set()});
+  const defaultType = computeTypeOptions()[0] || 'Other';
+  crew4.push({id:++crewSeq4, position:'', name:'', role:'', type:defaultType, headset:HEADSET_OPTIONS[0], verified:false, plIds:new Set()});
   renderCrewTable4();
 }
 function removeCrew(id){ crew4 = crew4.filter(c=>c.id!==id); renderCrewTable4(); }
