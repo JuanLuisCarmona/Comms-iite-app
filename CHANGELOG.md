@@ -4,6 +4,16 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Tab 4 panel types now scoped to what you chose on Tab 1
+
+**Changed**
+- The "type of point" dropdown on Tab 4 no longer lists every panel model that exists in the catalogue. It now only shows the specific panels you actually added (qty > 0) on Tab 1 for the systems you've chosen.
+  - Example: add Clear-Com Arcadia on Tab 1 and pick V-Series IrisX as its panel — only "V-Series IrisX Keypanel" shows up on Tab 4, not RTS keypanels, Riedel SmartPanels, or Green-GO stations you never added.
+- If you assigned someone to a panel type and later remove that panel from Tab 1, their row keeps showing their original selection (so nothing is silently reset) — it just won't be offered to new rows.
+- Switching to Tab 4 now always refreshes this list against the latest Tab 1 choices.
+
+---
+
 ## 2026-07-12 — Specific panel models on Tab 4's "type of point"
 
 **Added**
