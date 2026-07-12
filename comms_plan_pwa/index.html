@@ -82,9 +82,34 @@
     #printArea table.pltable th{writing-mode:vertical-rl;text-orientation:mixed;white-space:nowrap;padding:6px 3px;}
     #printArea table.pltable th:nth-child(-n+5){writing-mode:horizontal-tb;}
   }
+
+  .update-banner{
+    display:none;position:fixed;top:0;left:0;right:0;z-index:9999;
+    background:var(--panel);border-bottom:2px solid var(--accent);
+    box-shadow:0 6px 18px rgba(0,0,0,.45);padding:14px 20px;
+  }
+  .update-banner-inner{max-width:900px;margin:0 auto;display:flex;gap:18px;align-items:flex-start;}
+  .update-banner-inner .txt{flex:1;}
+  .update-banner-inner .txt b{display:block;color:var(--accent);font-size:14px;margin-bottom:6px;}
+  .update-banner-inner .txt ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--text);line-height:1.5;}
+  .update-banner-inner button{
+    background:var(--accent);color:#06131f;border:none;border-radius:8px;
+    padding:9px 20px;font-size:13.5px;font-weight:700;cursor:pointer;flex:0 0 auto;
+  }
+  @media print{ .update-banner{display:none !important;} }
 </style>
 </head>
 <body>
+
+<div class="update-banner" id="updateBanner">
+  <div class="update-banner-inner">
+    <div class="txt">
+      <b>The administrator has updated the app since the last time you opened it. Here's what changed:</b>
+      <ul id="updateBannerList"></ul>
+    </div>
+    <button onclick="dismissUpdateBanner()">OK</button>
+  </div>
+</div>
 
 <h1>Comms Plan Builder</h1>
 <div class="subtitle">Vendor-agnostic intercom system planner: choose your systems, sketch the cabling, check network requirements, and assign crew/party lines.</div>
@@ -227,6 +252,36 @@
 <div id="printArea"></div>
 
 <script>
+// ===================================================================
+// APP VERSION / "WHAT'S NEW" BANNER
+// Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
+// change — this is what drives the "app was updated" banner below.
+// ===================================================================
+const APP_VERSION = '2026-07-12.7';
+const APP_UPDATE_SUMMARY = [
+  'Added 5 new comms brands: Hollyland, Pliant Technologies, Eartec, Telikou, Vokkero',
+  'Added more Clear-Com (Encore, Agent-IC/LQ) and Riedel (Tango, PunQtum, Acrobat) models; Green-GO split into MCX/MCXD/BPX/WBPX',
+  'Client report now shows one tick/cross column per party line instead of a text list',
+  'Fixed a bug where app updates weren\'t reaching devices that already had it installed',
+  'Party line selections on the Roles tab now respect each device\'s real channel limit (e.g. DBP = 4)'
+];
+
+function checkForUpdateBanner(){
+  try{
+    const seen = localStorage.getItem('commsplan_seen_version');
+    if(seen !== APP_VERSION) showUpdateBanner();
+  } catch(e){ /* localStorage unavailable — skip silently */ }
+}
+function showUpdateBanner(){
+  const list = document.getElementById('updateBannerList');
+  list.innerHTML = APP_UPDATE_SUMMARY.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
+  document.getElementById('updateBanner').style.display = 'block';
+}
+function dismissUpdateBanner(){
+  try{ localStorage.setItem('commsplan_seen_version', APP_VERSION); } catch(e){}
+  document.getElementById('updateBanner').style.display = 'none';
+}
+
 // ===================================================================
 // SHARED HELPERS
 // ===================================================================
@@ -907,6 +962,7 @@ function printReport(){
 // ===================================================================
 // INITIAL RENDER
 // ===================================================================
+checkForUpdateBanner();
 renderSystems();
 renderSwitches();
 renderPLDirectory4();
