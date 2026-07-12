@@ -4,6 +4,15 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Specific panel models on Tab 4's "type of point"
+
+**Added**
+- The Roles & Partylines tab's device type dropdown now includes every specific panel/keypanel model from the Tab 1 catalogue (KP-32, KP-12, RSP-2318 variants, DCP-1116, V-Series/IrisX, HMS-4X, MCX/MCXD family, etc.) as its own selectable type, each with a party-line cap matching that panel's real key count — not just the generic "Panel / Keypanel" fallback.
+- The two lists share one source of truth (`PANEL_OPTIONS` from Tab 1), so adding a panel model in one place automatically makes it selectable in the other.
+- The old generic option is now labelled "Panel / Keypanel (generic / unlisted)" and stays uncapped, for panel hardware not in the catalogue.
+
+---
+
 ## 2026-07-12 — Compatible panel/keypanel models per system (Tab 1)
 
 **Added**
