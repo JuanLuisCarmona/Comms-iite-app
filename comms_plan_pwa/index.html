@@ -78,6 +78,9 @@
     #printArea th,#printArea td{border:1px solid #999;padding:6px 8px;font-size:12px;color:#000;}
     #printArea h1,#printArea h2{color:#000;}
     #printArea img{max-height:60px;}
+    #printArea table.pltable th,#printArea table.pltable td{padding:4px 5px;font-size:10px;}
+    #printArea table.pltable th{writing-mode:vertical-rl;text-orientation:mixed;white-space:nowrap;padding:6px 3px;}
+    #printArea table.pltable th:nth-child(-n+5){writing-mode:horizontal-tb;}
   }
 </style>
 </head>
@@ -260,19 +263,32 @@ const BRAND_FAMILY = { // groups models into a network-guidance family
   'Artist (Matrix)':'RTS/Riedel OMNEO-Dante',
   'Bolero (Wireless)':'RTS/Riedel OMNEO-Dante',
   'Performer / C44 (Partyline)':'RTS/Riedel OMNEO-Dante',
+  'Tango (Compact Matrix)':'RTS/Riedel OMNEO-Dante',
   'Arcadia (Central Station)':'Clear-Com AES67',
   'Eclipse HX (Matrix)':'Clear-Com AES67',
   'FreeSpeak (Wireless)':'Clear-Com AES67',
   'HelixNet (Digital Partyline)':'Clear-Com AES67',
-  'Green-GO Network (MCX / BPX / WBPX)':'Green-GO',
+  'Agent-IC / LQ Series (IP Bridge)':'Clear-Com AES67',
+  'MCX (Rack Station)':'Green-GO',
+  'MCXD (Desktop Station)':'Green-GO',
+  'BPX (Wired Beltpack)':'Green-GO',
+  'WBPX (Wireless Beltpack)':'Green-GO',
   'Custom / Other':'Other'
+  // PunQtum, Acrobat, Encore, and the Hollyland/Pliant/Eartec/Telikou/Vokkero wireless kits are
+  // intentionally left unmapped here — they're either RF-only (no switches involved) or run their
+  // own proprietary IP protocol without published IGMP/QoS guidance to build a checklist from.
 };
 
 const BRANDS = {
   'RTS': ['OMS (Digital Partyline)','ODIN (Matrix)','ADAM / ADAM-M / Cronus (Matrix)'],
-  'Riedel': ['Artist (Matrix)','Bolero (Wireless)','Performer / C44 (Partyline)'],
-  'Clear-Com': ['Arcadia (Central Station)','Eclipse HX (Matrix)','FreeSpeak (Wireless)','HelixNet (Digital Partyline)'],
-  'Green-GO': ['Green-GO Network (MCX / BPX / WBPX)'],
+  'Riedel': ['Artist (Matrix)','Bolero (Wireless)','Performer / C44 (Partyline)','Tango (Compact Matrix)','PunQtum (IP Digital Partyline)','Acrobat (Wireless)'],
+  'Clear-Com': ['Arcadia (Central Station)','Eclipse HX (Matrix)','FreeSpeak (Wireless)','HelixNet (Digital Partyline)','Encore (Analog Partyline)','Agent-IC / LQ Series (IP Bridge)'],
+  'Green-GO': ['MCX (Rack Station)','MCXD (Desktop Station)','BPX (Wired Beltpack)','WBPX (Wireless Beltpack)'],
+  'Hollyland': ['Solidcom M1 (Wireless)','Solidcom C1 (Wireless Headset)'],
+  'Pliant Technologies': ['CrewCom (Wireless)','MicroCom XR / M (Wireless)'],
+  'Eartec': ['UltraLITE / HUB (Wireless)'],
+  'Telikou': ['MDS-400 (Wireless)','Skyline SK-100 (Wireless)'],
+  'Vokkero': ['Guardian / Guardian Show (Wireless)'],
   'Other / Generic': ['Custom / Other']
 };
 
@@ -283,11 +299,27 @@ const MODEL_SPECS = {
   'Artist (Matrix)': {notes:'Riedel\'s flagship matrix. Supports up to 500 partylines/conferences when hosting Bolero in Integrated Artist mode. Capacity otherwise scales with card/frame configuration.'},
   'Bolero (Wireless)': {maxPL:12, maxPLLicensed:32, maxBeltpacks:100, notes:'Standalone (Link/AES67): 12 PL default, licensable to 32; 100 antennas/beltpacks. Integrated Artist: 500 PL, 250 beltpacks, 100 antennas.'},
   'Performer / C44 (Partyline)': {maxPL:4, notes:'CR-2/CR-4 standalone: 2 or 4 channels, ~32 devices/line. C44/C44plus: 24x24 standalone matrix, up to 38 beltpacks. Performer 32: 32x32 matrix, +16/+80 relay variants.'},
+  'Tango (Compact Matrix)': {notes:'Riedel\'s compact matrix (TNG-200): 2 integrated Riedel Digital Partylines built in, 2 RAVENNA/AES67 + AVB-compatible ports, 2 Ethernet ports, 1 option slot, redundant power. Smaller-scale alternative to Artist.'},
+  'PunQtum (IP Digital Partyline)': {maxPL:32, maxBeltpacks:8, notes:'Runs over standard IP network infrastructure (own protocol, not OMNEO). Up to 32 partyline channels, 4 program inputs, 4 PA outputs, 2 "Talk to Many" channels, 32 GPIO. Q110 beltpacks are 2-channel and daisy-chainable up to 8 units per network connection.'},
+  'Acrobat (Wireless)': {notes:'Riedel\'s compact wireless beltpack system (WB-2 beltpack). Exact channel/user ceilings vary by configuration — confirm with Riedel.'},
   'Arcadia (Central Station)': {maxBeltpacks:40, notes:'Up to 256 user stations / 329 audio I/O in 1RU. Up to 128 IP ports, 40 FreeSpeak beltpacks, 24 HelixNet channel ports (64 HelixNet endpoints), 8x 4-wire, 4x 2-wire analog, 64 Dante ports.'},
   'Eclipse HX (Matrix)': {notes:'Clear-Com\'s large-scale flagship matrix — capacity scales with card/frame configuration. Confirm exact sizing with Clear-Com.'},
   'FreeSpeak (Wireless)': {maxBeltpacks:40, notes:'Up to 40 FreeSpeak beltpacks when hosted on Arcadia. 1.9GHz, 2.4GHz and 5GHz bands can run simultaneously.'},
   'HelixNet (Digital Partyline)': {maxBeltpacks:64, notes:'Up to 64 HelixNet endpoints (beltpacks, remote stations, speaker stations) over 24 HelixNet-enabled channels when hosted on Arcadia.'},
-  'Green-GO Network (MCX / BPX / WBPX)': {maxPL:32, notes:'Peer-to-peer — no central matrix required. 32 channels/device, each configurable as private (point-to-point) or public (group/PL). Practical ceiling ~150 simultaneous active sources per config.'},
+  'Encore (Analog Partyline)': {notes:'Clear-Com\'s 2-wire analog partyline family. Capacity depends on the specific main station model — confirm exact channel/beltpack count with Clear-Com. No IP network required.'},
+  'Agent-IC / LQ Series (IP Bridge)': {maxBeltpacks:8, notes:'Each LQ device bridges up to 8 simultaneous Agent-IC mobile app users; up to 6 LQ devices networked together support 48 Agent-IC clients total. Bridges Encore (analog), HelixNet (digital) or Eclipse HX (matrix) out to mobile devices, exposing up to 24 intercom channels in the app.'},
+  'MCX (Rack Station)': {maxPL:32, notes:'Green-GO rack-mount master station: 32 multicolour keys, 3 TFT touchscreens. Up to 9 MCXEXT extension units can be daisy-chained to one MCX. Peer-to-peer network — no central matrix required.'},
+  'MCXD (Desktop Station)': {maxPL:32, notes:'Green-GO desktop station — same 32-channel peer-to-peer access as the rest of the Green-GO range.'},
+  'BPX (Wired Beltpack)': {maxPL:32, notes:'Green-GO wired Beltpack X — PoE powered via Ethercon, 32 channels, each configurable as private (point-to-point) or public (group/PL).'},
+  'WBPX (Wireless Beltpack)': {maxPL:32, notes:'Green-GO wireless Beltpack X — same 32-channel access as BPX, battery powered.'},
+  'Solidcom M1 (Wireless)': {maxBeltpacks:8, notes:'Hollyland Solidcom M1: base packages of 4 or 8 beltpacks, cascadable across multiple base stations, up to 3 communication groups, 3 full-duplex channels total. RF-only — no network switches involved.'},
+  'Solidcom C1 (Wireless Headset)': {maxBeltpacks:8, notes:'Hollyland Solidcom C1: self-contained headsets, no separate beltpack or base station required. Up to 8 headsets per system (master + remotes); HUB base offers 2 communication channels. RF-only.'},
+  'CrewCom (Wireless)': {notes:'Pliant CrewCom: available in 900MHz and 2.4GHz (incl. CE) bands. Radio Packs come in 2-Volume/2-Conference and 4-Volume/4-Conference variants — check which pack matches your channel/conference needs. RF-only.'},
+  'MicroCom XR / M (Wireless)': {maxBeltpacks:6, notes:'Pliant MicroCom family: MicroCom M is single-channel multi-user; MicroCom 2400XR is 2-channel (2.4GHz); MicroCom 863XR is 2-channel (863–865MHz) supporting up to 6 full-duplex users plus unlimited listen-only users. RF-only.'},
+  'UltraLITE / HUB (Wireless)': {maxBeltpacks:8, notes:'Eartec HUB supports up to 8 wireless UltraLITE users (9 with a wired headset via the aux jack); two HUBs can be interlinked for up to 16 users. 2 channels plus an all-call Conference mode. RF-only.'},
+  'MDS-400 (Wireless)': {maxBeltpacks:4, notes:'Telikou MDS-400: 2.4GHz digital full-duplex, 4 channels, up to 4 BK-2400 beltpacks, ~200m range in open area. RF-only.'},
+  'Skyline SK-100 (Wireless)': {maxBeltpacks:8, notes:'Telikou Skyline SK-100: supports up to 8 users across multiple antennas. RF-only.'},
+  'Guardian / Guardian Show (Wireless)': {notes:'Vokkero Guardian/Guardian Show: 10 license-free radio channels with 4 groups per channel; practical user count per group is RF-condition dependent rather than a fixed ceiling. Range up to 1.2km, 7–11hr battery life. RF-only.'},
   'Custom / Other': {notes:'Generic/other system — record known limits in your own notes; nothing to validate automatically.'}
 };
 
@@ -849,9 +881,10 @@ function printReport(){
 
   let sysRows = systemBlocks.map(s=>`<tr><td>${escapeHtml(s.label)}</td><td>${escapeHtml(s.brand)} — ${escapeHtml(s.model)}</td><td>${s.plNeeded}</td><td>${s.beltpacks}</td><td>${s.panels}</td></tr>`).join('');
 
+  const plHeaderCells = plDirectory4.map(p=>`<th>${escapeHtml(p.name)}</th>`).join('');
   let crewRows = crew4.map(c=>{
-    const plList = plDirectory4.filter(p=>c.plIds.has(p.id)).map(p=>p.name).join(', ') || '—';
-    return `<tr><td>${escapeHtml(c.position)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.role)}</td><td>${escapeHtml(c.type)}</td><td>${escapeHtml(c.headset)}</td><td>${plList}</td><td style="text-align:center;">${c.verified?'✓':'—'}</td></tr>`;
+    const plCells = plDirectory4.map(p=>`<td style="text-align:center;">${c.plIds.has(p.id)?'✓':'✗'}</td>`).join('');
+    return `<tr><td>${escapeHtml(c.position)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.role)}</td><td>${escapeHtml(c.type)}</td><td>${escapeHtml(c.headset)}</td>${plCells}<td style="text-align:center;">${c.verified?'✓':'—'}</td></tr>`;
   }).join('');
 
   document.getElementById('printArea').innerHTML = `
@@ -866,7 +899,7 @@ function printReport(){
     <h2>Systems</h2>
     <table><thead><tr><th>Label</th><th>Brand / Model</th><th>PL</th><th>Beltpacks</th><th>Panels</th></tr></thead><tbody>${sysRows}</tbody></table>
     <h2>Roles &amp; Party Line Assignments</h2>
-    <table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Type</th><th>Headset</th><th>Party Lines</th><th>Verified</th></tr></thead><tbody>${crewRows}</tbody></table>
+    <table class="pltable"><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Type</th><th>Headset</th>${plHeaderCells}<th>Verified</th></tr></thead><tbody>${crewRows}</tbody></table>
   `;
   window.print();
 }
