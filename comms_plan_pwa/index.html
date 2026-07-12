@@ -257,8 +257,9 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.10';
+const APP_VERSION = '2026-07-12.11';
 const APP_UPDATE_SUMMARY = [
+  'Tab 4 "type of point" dropdown is now scoped to only the panel models you actually added on Tab 1 for your chosen systems (e.g. picking Clear-Com Arcadia + V-Series IrisX on Tab 1 means only IrisX shows up on Tab 4 — not every other brand\'s panels too), each still capped to its real key count',
   'Tab 4 "type of point" dropdown now also lists every specific panel/keypanel model from Tab 1 (KP-32, RSP-2318, V-Series IrisX, MCXD, etc.), each with its real key-count PL cap — so crew assigned to a specific panel are capped correctly instead of only the generic "Panel / Keypanel" option',
   'Tab 1 now lets you pick the actual compatible keypanel/desk panel models for RTS (OMS/ODIN/ADAM), Riedel (Artist/Tango/Performer-C44), Clear-Com (Arcadia/Eclipse HX/HelixNet/Encore) and Green-GO (MCX/MCXD), with quantities, instead of a single generic "panels" number',
   'FreeSpeak beltpack is now split into FreeSpeak II (5-channel cap) and FreeSpeak Edge (9-channel cap) so its party line limit is enforced like every other device type',
@@ -308,6 +309,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='tab2') renderSchematic();
+    if(btn.dataset.tab==='tab4') renderCrewTable4(); // refresh "type of point" options against latest Tab 1 panel choices
   });
 });
 
@@ -908,23 +910,31 @@ let plDirectory4 = []; // {id, name}
 let crewSeq4 = 0;
 let crew4 = []; // {id, position, name, role, type, headset, verified, plIds:Set}
 
-// Auto-derive every specific keypanel/desk-panel model from the Tab 1
-// PANEL_OPTIONS catalogue, deduped by name, so Tab 4's "type of point"
-// dropdown always lists exactly the same compatible panels as Tab 1 —
-// one source of truth, no risk of the two lists drifting apart.
-const PANEL_TYPE_ENTRIES = (()=>{
+// Which specific panel/keypanel models are actually IN USE — i.e. added with
+// qty > 0 on Tab 1 for the systems you've chosen — deduped by name, each
+// carrying its real key-count PL cap. This is what scopes Tab 4's "type of
+// point" dropdown to only the panels relevant to your setup (e.g. if you
+// added Clear-Com Arcadia with V-Series IrisX panels, only IrisX shows up —
+// not every other brand's keypanels too).
+function usedPanelTypes(){
   const seen = new Map();
-  Object.values(PANEL_OPTIONS).forEach(list=>{
-    list.forEach(p=>{ if(!seen.has(p.name)) seen.set(p.name, p.maxKeys); });
+  systemBlocks.forEach(s=>{
+    const opts = PANEL_OPTIONS[s.model];
+    if(!opts) return;
+    (s.panelLines||[]).forEach(l=>{
+      if((parseInt(l.qty)||0) <= 0) return;
+      if(seen.has(l.panelName)) return;
+      const spec = opts.find(o=>o.name===l.panelName);
+      seen.set(l.panelName, spec ? spec.maxKeys : null);
+    });
   });
   return [...seen.entries()]; // [[name, maxKeys], ...]
-})();
+}
 
-const TYPE_OPTIONS = [
+const TYPE_OPTIONS_BASE = [
   'DBP (wired beltpack)',
   'Bolero beltpack',
   'Panel / Keypanel (generic / unlisted)',
-  ...PANEL_TYPE_ENTRIES.map(([name])=>name),
   'Green-GO BPX/WBPX',
   'Clear-Com HelixNet beltpack',
   'Clear-Com FreeSpeak II beltpack',
@@ -935,17 +945,32 @@ const TYPE_OPTIONS = [
 ];
 const HEADSET_OPTIONS = ['Single-Muff (4-pin XLR)','Double-Muff (4-pin XLR)','Single-Muff (5-pin XLR/PTT)','Double-Muff (5-pin XLR/PTT)','Lightweight Headset','Noise-Cancelling Headset','Handset','Speaker Station (no headset)','Integrated Mic/Speaker (no headset)'];
 
+// Builds today's "type of point" list: base beltpack/generic types + only the
+// panel models actually chosen on Tab 1. If a crew member's current type was
+// removed from Tab 1 since it was assigned, it's kept in its own row's list
+// so the assignment isn't silently lost or reset.
+function computeTypeOptions(currentValue){
+  const used = usedPanelTypes().map(([name])=>name);
+  const list = [...TYPE_OPTIONS_BASE.slice(0,3), ...used, ...TYPE_OPTIONS_BASE.slice(3)];
+  if(currentValue && !list.includes(currentValue)) list.splice(3, 0, currentValue);
+  return list;
+}
+
 // Physical channel/key ceilings per device type — caps how many PLs can be ticked for that row.
 // Types not listed here (generic Panel/Keypanel, Analog, Other) vary too much to cap generically.
-const TYPE_MAX_PL = Object.assign({
-  'DBP (wired beltpack)': 4,                     // RTS DBP: channels A/B/C/D
-  'Bolero beltpack': 6,                          // Riedel Bolero: 6 configurable keys + Reply
-  'Clear-Com HelixNet beltpack': 2,              // e.g. HBP-2X: 2-channel full-duplex
-  'Clear-Com FreeSpeak II beltpack': 5,          // FSII-BP19: up to 5 audio paths
-  'Clear-Com FreeSpeak Edge beltpack': 9,        // FSE-BP50: 9 full-duplex audio paths / 9 keys
-  'Green-GO BPX/WBPX': 32,                       // Green-GO Beltpack X: 32 channels
-  'Performer beltpack': 2                        // Riedel Performer C3: 2-channel
-}, Object.fromEntries(PANEL_TYPE_ENTRIES));       // + every specific panel model's real key count
+function computeTypeMaxPL(){
+  const base = {
+    'DBP (wired beltpack)': 4,                     // RTS DBP: channels A/B/C/D
+    'Bolero beltpack': 6,                          // Riedel Bolero: 6 configurable keys + Reply
+    'Clear-Com HelixNet beltpack': 2,              // e.g. HBP-2X: 2-channel full-duplex
+    'Clear-Com FreeSpeak II beltpack': 5,          // FSII-BP19: up to 5 audio paths
+    'Clear-Com FreeSpeak Edge beltpack': 9,        // FSE-BP50: 9 full-duplex audio paths / 9 keys
+    'Green-GO BPX/WBPX': 32,                       // Green-GO Beltpack X: 32 channels
+    'Performer beltpack': 2                        // Riedel Performer C3: 2-channel
+  };
+  usedPanelTypes().forEach(([name,maxKeys])=>{ if(maxKeys!=null) base[name]=maxKeys; });
+  return base;
+}
 
 const exportCols = {position:true, name:true, role:true, type:true, headset:true, verified:true, pl:true};
 
@@ -987,13 +1012,13 @@ function renderPLDirectory4(){
 function seedCrew(){
   crew4 = [
     {id:++crewSeq4, position:'1', name:'Juan', role:'Cam Op', type:'Bolero beltpack', headset:HEADSET_OPTIONS[1], verified:false, plIds:new Set()},
-    {id:++crewSeq4, position:'2', name:'', role:'Director', type:'Panel / Keypanel', headset:HEADSET_OPTIONS[3], verified:false, plIds:new Set()}
+    {id:++crewSeq4, position:'2', name:'', role:'Director', type:'Panel / Keypanel (generic / unlisted)', headset:HEADSET_OPTIONS[3], verified:false, plIds:new Set()}
   ];
 }
 seedCrew();
 
 function addCrew(){
-  crew4.push({id:++crewSeq4, position:'', name:'', role:'', type:TYPE_OPTIONS[0], headset:HEADSET_OPTIONS[0], verified:false, plIds:new Set()});
+  crew4.push({id:++crewSeq4, position:'', name:'', role:'', type:TYPE_OPTIONS_BASE[0], headset:HEADSET_OPTIONS[0], verified:false, plIds:new Set()});
   renderCrewTable4();
 }
 function removeCrew(id){ crew4 = crew4.filter(c=>c.id!==id); renderCrewTable4(); }
@@ -1002,7 +1027,7 @@ function updateCrewSelect4(id, field, val){
   const c = crew4.find(c=>c.id===id); if(!c) return;
   c[field]=val;
   if(field==='type'){
-    const max = TYPE_MAX_PL[val];
+    const max = computeTypeMaxPL()[val];
     if(max && c.plIds.size>max){
       c.plIds = new Set([...c.plIds].slice(0, max)); // trim overflow when switching to a more limited device
     }
@@ -1012,7 +1037,7 @@ function updateCrewSelect4(id, field, val){
 function toggleCrewVerified(id, checked){ const c = crew4.find(c=>c.id===id); if(c) c.verified=checked; }
 function togglePL4(crewId, plId, checked){
   const c = crew4.find(c=>c.id===crewId); if(!c) return;
-  const max = TYPE_MAX_PL[c.type];
+  const max = computeTypeMaxPL()[c.type];
   if(checked){
     if(max && c.plIds.size>=max){ renderCrewTable4(); return; } // at capacity — reject and re-render to reset the checkbox
     c.plIds.add(plId);
@@ -1032,17 +1057,20 @@ function renderCrewTable4(){
   </tr>`;
   const body = document.getElementById('crewBody4');
   if(crew4.length===0){ body.innerHTML = `<tr><td colspan="8" class="empty-hint">No positions yet.</td></tr>`; return; }
-  body.innerHTML = crew4.map(c=>`
+  const typeMaxPL = computeTypeMaxPL();
+  body.innerHTML = crew4.map(c=>{
+    const typeOptions = computeTypeOptions(c.type);
+    return `
     <tr>
       <td><input type="text" value="${escapeHtml(c.position)}" oninput="updateCrewField4(${c.id},'position',this.value)"></td>
       <td><input type="text" value="${escapeHtml(c.name)}" oninput="updateCrewField4(${c.id},'name',this.value)"></td>
       <td><input type="text" value="${escapeHtml(c.role)}" oninput="updateCrewField4(${c.id},'role',this.value)"></td>
-      <td><select onchange="updateCrewSelect4(${c.id},'type',this.value)">${TYPE_OPTIONS.map(t=>`<option ${c.type===t?'selected':''}>${t}</option>`).join('')}</select></td>
+      <td><select onchange="updateCrewSelect4(${c.id},'type',this.value)">${typeOptions.map(t=>`<option ${c.type===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select></td>
       <td><select onchange="updateCrewSelect4(${c.id},'headset',this.value)">${HEADSET_OPTIONS.map(h=>`<option ${c.headset===h?'selected':''}>${h}</option>`).join('')}</select></td>
       <td>
         <div class="pl-check-list">
           ${plDirectory4.length ? plDirectory4.map(p=>{
-            const max = TYPE_MAX_PL[c.type];
+            const max = typeMaxPL[c.type];
             const isChecked = c.plIds.has(p.id);
             const atCap = max && !isChecked && c.plIds.size>=max;
             return `
@@ -1053,12 +1081,13 @@ function renderCrewTable4(){
           `;
           }).join('') : '<span class="empty-hint">No PLs defined.</span>'}
         </div>
-        ${TYPE_MAX_PL[c.type] ? `<div style="font-size:10.5px;color:var(--muted);margin-top:4px;">${c.plIds.size} / ${TYPE_MAX_PL[c.type]} channels used (${escapeHtml(c.type)} limit)</div>` : ''}
+        ${typeMaxPL[c.type] ? `<div style="font-size:10.5px;color:var(--muted);margin-top:4px;">${c.plIds.size} / ${typeMaxPL[c.type]} channels used (${escapeHtml(c.type)} limit)</div>` : ''}
       </td>
       <td style="text-align:center;"><input type="checkbox" ${c.verified?'checked':''} onchange="toggleCrewVerified(${c.id}, this.checked)"></td>
       <td class="row-actions"><button class="btn danger" onclick="removeCrew(${c.id})">Remove</button></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderExportCols(){
