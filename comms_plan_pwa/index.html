@@ -257,8 +257,9 @@
 // Bump APP_VERSION and update APP_UPDATE_SUMMARY every time you ship a
 // change — this is what drives the "app was updated" banner below.
 // ===================================================================
-const APP_VERSION = '2026-07-12.9';
+const APP_VERSION = '2026-07-12.10';
 const APP_UPDATE_SUMMARY = [
+  'Tab 4 "type of point" dropdown now also lists every specific panel/keypanel model from Tab 1 (KP-32, RSP-2318, V-Series IrisX, MCXD, etc.), each with its real key-count PL cap — so crew assigned to a specific panel are capped correctly instead of only the generic "Panel / Keypanel" option',
   'Tab 1 now lets you pick the actual compatible keypanel/desk panel models for RTS (OMS/ODIN/ADAM), Riedel (Artist/Tango/Performer-C44), Clear-Com (Arcadia/Eclipse HX/HelixNet/Encore) and Green-GO (MCX/MCXD), with quantities, instead of a single generic "panels" number',
   'FreeSpeak beltpack is now split into FreeSpeak II (5-channel cap) and FreeSpeak Edge (9-channel cap) so its party line limit is enforced like every other device type',
   'Added 5 new comms brands: Hollyland, Pliant Technologies, Eartec, Telikou, Vokkero',
@@ -907,12 +908,36 @@ let plDirectory4 = []; // {id, name}
 let crewSeq4 = 0;
 let crew4 = []; // {id, position, name, role, type, headset, verified, plIds:Set}
 
-const TYPE_OPTIONS = ['DBP (wired beltpack)','Bolero beltpack','Panel / Keypanel','Green-GO BPX/WBPX','Clear-Com HelixNet beltpack','Clear-Com FreeSpeak II beltpack','Clear-Com FreeSpeak Edge beltpack','Performer beltpack','Analog beltpack','Other'];
+// Auto-derive every specific keypanel/desk-panel model from the Tab 1
+// PANEL_OPTIONS catalogue, deduped by name, so Tab 4's "type of point"
+// dropdown always lists exactly the same compatible panels as Tab 1 —
+// one source of truth, no risk of the two lists drifting apart.
+const PANEL_TYPE_ENTRIES = (()=>{
+  const seen = new Map();
+  Object.values(PANEL_OPTIONS).forEach(list=>{
+    list.forEach(p=>{ if(!seen.has(p.name)) seen.set(p.name, p.maxKeys); });
+  });
+  return [...seen.entries()]; // [[name, maxKeys], ...]
+})();
+
+const TYPE_OPTIONS = [
+  'DBP (wired beltpack)',
+  'Bolero beltpack',
+  'Panel / Keypanel (generic / unlisted)',
+  ...PANEL_TYPE_ENTRIES.map(([name])=>name),
+  'Green-GO BPX/WBPX',
+  'Clear-Com HelixNet beltpack',
+  'Clear-Com FreeSpeak II beltpack',
+  'Clear-Com FreeSpeak Edge beltpack',
+  'Performer beltpack',
+  'Analog beltpack',
+  'Other'
+];
 const HEADSET_OPTIONS = ['Single-Muff (4-pin XLR)','Double-Muff (4-pin XLR)','Single-Muff (5-pin XLR/PTT)','Double-Muff (5-pin XLR/PTT)','Lightweight Headset','Noise-Cancelling Headset','Handset','Speaker Station (no headset)','Integrated Mic/Speaker (no headset)'];
 
 // Physical channel/key ceilings per device type — caps how many PLs can be ticked for that row.
-// Types not listed here (Panel/Keypanel, Analog, Other) vary too much by model to cap generically.
-const TYPE_MAX_PL = {
+// Types not listed here (generic Panel/Keypanel, Analog, Other) vary too much to cap generically.
+const TYPE_MAX_PL = Object.assign({
   'DBP (wired beltpack)': 4,                     // RTS DBP: channels A/B/C/D
   'Bolero beltpack': 6,                          // Riedel Bolero: 6 configurable keys + Reply
   'Clear-Com HelixNet beltpack': 2,              // e.g. HBP-2X: 2-channel full-duplex
@@ -920,7 +945,7 @@ const TYPE_MAX_PL = {
   'Clear-Com FreeSpeak Edge beltpack': 9,        // FSE-BP50: 9 full-duplex audio paths / 9 keys
   'Green-GO BPX/WBPX': 32,                       // Green-GO Beltpack X: 32 channels
   'Performer beltpack': 2                        // Riedel Performer C3: 2-channel
-};
+}, Object.fromEntries(PANEL_TYPE_ENTRIES));       // + every specific panel model's real key count
 
 const exportCols = {position:true, name:true, role:true, type:true, headset:true, verified:true, pl:true};
 
