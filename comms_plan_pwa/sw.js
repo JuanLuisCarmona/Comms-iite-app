@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comms-plan-v1';
+const CACHE_NAME = 'comms-plan-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -21,17 +21,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache-first, falling back to network, so the tool works fully offline once installed.
+// Network-first, falling back to cache only when offline — so updates you push
+// show up the next time the app is opened with a connection, instead of being
+// stuck on whatever was cached the first time it was installed.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((resp) => {
-        const copy = resp.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return resp;
-      }).catch(() => cached);
-    })
+    fetch(event.request).then((resp) => {
+      const copy = resp.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+      return resp;
+    }).catch(() => caches.match(event.request))
   );
 });
