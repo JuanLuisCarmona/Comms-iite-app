@@ -4,6 +4,13 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Update banner now shows only the latest change
+
+**Changed**
+- The in-app "what's new" banner used to list every change ever shipped, which kept growing and filling the screen. It now shows only the single most recent update. This file (CHANGELOG.md) remains the full history for anyone who wants it.
+
+---
+
 ## 2026-07-12 — Fixed: CSV export put every crew member on one line
 
 **Fixed**
