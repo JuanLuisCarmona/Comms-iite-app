@@ -4,6 +4,24 @@ All notable changes to the Comms Plan Builder app are documented in this file, m
 
 ---
 
+## 2026-07-12 — Compatible panel/keypanel models per system (Tab 1)
+
+**Added**
+- Tab 1 system cards now show the actual compatible desk/rack panel models for systems that have a known catalogue, with a quantity per model instead of one generic "panels" number:
+  - RTS OMS / ODIN / ADAM-M/Cronus: KP-32, KP-12, KP-5032, KP-4016, KP-632/EKP-632 keypanels
+  - Riedel Artist / Tango: RSP-2318 SmartPanel (Basic/Plus/Pro), DCP-1116 Control Panel
+  - Riedel Performer/C44: CD-2, CW-2 desk/wall stations, CR-2/CR-4 rack stations
+  - Clear-Com Arcadia: V-Series Iris/IrisX keypanels, HelixNet HMS-4X (via I.V. port)
+  - Clear-Com Eclipse HX: V-Series keypanels (12/16/24-key), V-Series IrisX (32-key)
+  - Clear-Com HelixNet: HMS-4X Main Station
+  - Clear-Com Encore: 2-channel desk/wall station
+  - Green-GO MCX: MCX Rack Station, MCXEXT extension
+  - Green-GO MCXD: MCXD Desktop Station, MCXDEXT extension, WPX Wall Panel X
+- Systems without a known panel catalogue (Bolero, Acrobat, PunQtum, FreeSpeak, Agent-IC/LQ, all RF-only brands, Custom/Other) keep the original manual "panels" number field.
+- The Tab 2 schematic view now shows the Tab-1-derived panel total as read-only for systems with a catalogue, so there's one source of truth.
+
+---
+
 ## 2026-07-12 — FreeSpeak beltpack channel cap fix
 
 **Fixed**
